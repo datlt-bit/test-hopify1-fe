@@ -14,10 +14,10 @@ datasource db {
 }
 
 model Session {
-  id            String    @id
+  id            String   @id
   shop          String
   state         String
-  isOnline      Boolean   @default(false)
+  isOnline      Boolean  @default(false)
   scope         String?
   expires       DateTime?
   accessToken   String
@@ -25,8 +25,36 @@ model Session {
   firstName     String?
   lastName      String?
   email         String?
-  accountOwner  Boolean   @default(false)
+  accountOwner  Boolean  @default(false)
   locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
+  collaborator  Boolean? @default(false)
+  emailVerified Boolean? @default(false)
+}
+
+/// Local cache of Shopify products created or touched by this app
+model Product {
+  /// Shopify GraphQL global ID (e.g. "gid://shopify/Product/1234567890")
+  id        String    @id
+  shop      String
+  title     String
+  handle    String?
+  status    String?
+  variants  Variant[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+/// Local cache of Shopify product variants
+model Variant {
+  /// Shopify GraphQL global ID (e.g. "gid://shopify/ProductVariant/1234567890")
+  id        String   @id
+
+  /// Relation back to the owning product
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+
+  shop      String
+  price     String?
+  barcode   String?
+  createdAt DateTime?
 }
