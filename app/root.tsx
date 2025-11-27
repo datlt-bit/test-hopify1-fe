@@ -15,6 +15,16 @@ export default function App() {
         <Links />
       </head>
       <body>
+        {/* Ensure a global `shopify` object exists when running outside Shopify Admin */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== "undefined" && !window.shopify) {
+                window.shopify = { config: {} };
+              }
+            `,
+          }}
+        />
         <Outlet />
         <ScrollRestoration />
         <Scripts />

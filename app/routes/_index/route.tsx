@@ -25,6 +25,9 @@ export default function App() {
         <p className={styles.text}>
           A tagline about [Dat Test App] that describes your value proposition.
         </p>
+        <p className={styles.text}>
+          This page wont display with the rest of the pages. This is the equivalent of the shopify login page, not the store page.
+        </p>
         {showForm && (
           <Form className={styles.form} method="post" action="/auth/login">
             <label className={styles.label}>

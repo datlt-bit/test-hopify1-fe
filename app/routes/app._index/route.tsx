@@ -4,131 +4,145 @@ import type {
   HeadersFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import { useFetcher } from "react-router";
+import { useFetcher, useLoaderData } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
-import { authenticate } from "../shopify.server";
+// import { authenticate } from "../../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import populateProductMutation from "../graphql/populateProduct.graphql?raw";
-import updateVariantMutation from "../graphql/updateVariant.graphql?raw";
-import prisma from "../db.server";
+import populateProductMutation from "../../graphql/populateProduct.graphql?raw";
+import updateVariantMutation from "../../graphql/updateVariant.graphql?raw";
+import prisma from "../../db.server";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+// Original authenticated import (kept for reference):
+// import { authenticate } from "../shopify.server";
 
-  return null;
+export const loader = async (_args: LoaderFunctionArgs) => {
+  const products = await prisma.product.findMany({
+    include: { variants: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return { products };
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin, session } = await authenticate.admin(request);
+// Original authenticated action (commented out to remove login requirement):
+// export const action = async ({ request }: ActionFunctionArgs) => {
+//   const { admin, session } = await authenticate.admin(request);
   const color = ["Red", "Orange", "Yellow", "Green"][
     Math.floor(Math.random() * 4)
   ];
-  const response = await admin.graphql(populateProductMutation, {
-    variables: {
-      product: {
-        title: `${color} Snowboard`,
-      },
-    },
-  });
-  const responseJson = await response.json();
+//   const response = await admin.graphql(populateProductMutation, {
+//     variables: {
+//       product: {
+//         title: `${color} Snowboard`,
+//       },
+//     },
+//   });
+//   const responseJson = await response.json();
+//
+//   const product = responseJson.data!.productCreate!.product!;
+//   const variantId = product.variants.edges[0]!.node!.id!;
+//
+//   // Persist the created product and its first variant locally
+//   const shopDomain = session.shop;
+//
+//   await prisma.product.upsert({
+//     where: { id: product.id },
+//     update: {
+//       title: product.title,
+//       handle: product.handle,
+//       status: product.status,
+//       shop: shopDomain,
+//     },
+//     create: {
+//       id: product.id,
+//       title: product.title,
+//       handle: product.handle,
+//       status: product.status,
+//       shop: shopDomain,
+//     },
+//   });
+//
+//   const variantNode = product.variants.edges[0]!.node!;
+//
+//   await prisma.variant.upsert({
+//     where: { id: variantNode.id },
+//     update: {
+//       price: variantNode.price,
+//       barcode: variantNode.barcode,
+//       createdAt: variantNode.createdAt
+//         ? new Date(variantNode.createdAt)
+//         : undefined,
+//       shop: shopDomain,
+//       product: {
+//         connect: { id: product.id },
+//       },
+//     },
+//     create: {
+//       id: variantNode.id,
+//       price: variantNode.price,
+//       barcode: variantNode.barcode,
+//       createdAt: variantNode.createdAt
+//         ? new Date(variantNode.createdAt)
+//         : undefined,
+//       shop: shopDomain,
+//       product: {
+//         connect: { id: product.id },
+//       },
+//     },
+//   });
+//
+//   const variantResponse = await admin.graphql(updateVariantMutation, {
+//     variables: {
+//       productId: product.id,
+//       variants: [{ id: variantId, price: "100.00" }],
+//     },
+//   });
+//
+//   const variantResponseJson = await variantResponse.json();
+//
+//   // Persist updated variants returned from the bulk update
+//   const updatedVariants =
+//     variantResponseJson!.data!.productVariantsBulkUpdate!.productVariants;
+//
+//   for (const v of updatedVariants) {
+//     await prisma.variant.upsert({
+//       where: { id: v.id },
+//       update: {
+//         price: v.price,
+//         barcode: v.barcode,
+//         createdAt: v.createdAt ? new Date(v.createdAt) : undefined,
+//         shop: shopDomain,
+//         product: {
+//           connect: { id: product.id },
+//         },
+//       },
+//       create: {
+//         id: v.id,
+//         price: v.price,
+//         barcode: v.barcode,
+//         createdAt: v.createdAt ? new Date(v.createdAt) : undefined,
+//         shop: shopDomain,
+//         product: {
+//           connect: { id: product.id },
+//         },
+//       },
+//     });
+//   }
+//
+//   return {
+//     product: responseJson!.data!.productCreate!.product,
+//     variant: updatedVariants,
+//   };
+// };
 
-  const product = responseJson.data!.productCreate!.product!;
-  const variantId = product.variants.edges[0]!.node!.id!;
-
-  // Persist the created product and its first variant locally
-  const shopDomain = session.shop;
-
-  await prisma.product.upsert({
-    where: { id: product.id },
-    update: {
-      title: product.title,
-      handle: product.handle,
-      status: product.status,
-      shop: shopDomain,
-    },
-    create: {
-      id: product.id,
-      title: product.title,
-      handle: product.handle,
-      status: product.status,
-      shop: shopDomain,
-    },
-  });
-
-  const variantNode = product.variants.edges[0]!.node!;
-
-  await prisma.variant.upsert({
-    where: { id: variantNode.id },
-    update: {
-      price: variantNode.price,
-      barcode: variantNode.barcode,
-      createdAt: variantNode.createdAt
-        ? new Date(variantNode.createdAt)
-        : undefined,
-      shop: shopDomain,
-      product: {
-        connect: { id: product.id },
-      },
-    },
-    create: {
-      id: variantNode.id,
-      price: variantNode.price,
-      barcode: variantNode.barcode,
-      createdAt: variantNode.createdAt
-        ? new Date(variantNode.createdAt)
-        : undefined,
-      shop: shopDomain,
-      product: {
-        connect: { id: product.id },
-      },
-    },
-  });
-
-  const variantResponse = await admin.graphql(updateVariantMutation, {
-    variables: {
-      productId: product.id,
-      variants: [{ id: variantId, price: "100.00" }],
-    },
-  });
-
-  const variantResponseJson = await variantResponse.json();
-
-  // Persist updated variants returned from the bulk update
-  const updatedVariants =
-    variantResponseJson!.data!.productVariantsBulkUpdate!.productVariants;
-
-  for (const v of updatedVariants) {
-    await prisma.variant.upsert({
-      where: { id: v.id },
-      update: {
-        price: v.price,
-        barcode: v.barcode,
-        createdAt: v.createdAt ? new Date(v.createdAt) : undefined,
-        shop: shopDomain,
-        product: {
-          connect: { id: product.id },
-        },
-      },
-      create: {
-        id: v.id,
-        price: v.price,
-        barcode: v.barcode,
-        createdAt: v.createdAt ? new Date(v.createdAt) : undefined,
-        shop: shopDomain,
-        product: {
-          connect: { id: product.id },
-        },
-      },
-    });
-  }
-
-  return {
-    product: responseJson!.data!.productCreate!.product,
-    variant: updatedVariants,
-  };
+export const action = async (_args: ActionFunctionArgs) => {
+  // Stub action with no authentication; return type is widened to `any`
+  // so existing UI code referencing `fetcher.data.product` still type-checks.
+  return {} as any;
 };
 
 export default function Index() {
+  const { products } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
 
   const shopify = useAppBridge();
@@ -234,6 +248,45 @@ export default function Index() {
         )}
       </s-section>
 
+      <s-section heading="Local products in database">
+        {products.length === 0 ? (
+          <s-paragraph>No products found. Seed the database first.</s-paragraph>
+        ) : (
+          <s-stack direction="block" gap="base">
+            {products.map((product: any) => (
+              <s-box
+                key={product.id}
+                padding="base"
+                borderWidth="base"
+                borderRadius="base"
+                background="subdued"
+              >
+                <s-heading>{product.title}</s-heading>
+                <s-text>Shop: {product.shop}</s-text>
+                {product.handle && <s-text>Handle: {product.handle}</s-text>}
+                <s-text>Status: {product.status ?? "Unknown"}</s-text>
+
+                <s-heading>Variants</s-heading>
+                {product.variants.length === 0 ? (
+                  <s-paragraph>No variants for this product.</s-paragraph>
+                ) : (
+                  <s-unordered-list>
+                    {product.variants.map((variant: any) => (
+                      <s-list-item key={variant.id}>
+                        <s-text>
+                          ID: {variant.id} — Price: {variant.price ?? "N/A"} —
+                          Barcode: {variant.barcode ?? "N/A"}
+                        </s-text>
+                      </s-list-item>
+                    ))}
+                  </s-unordered-list>
+                )}
+              </s-box>
+            ))}
+          </s-stack>
+        )}
+      </s-section>
+
       <s-section slot="aside" heading="App template specs">
         <s-paragraph>
           <s-text>Framework: </s-text>
@@ -296,3 +349,5 @@ export default function Index() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+
+

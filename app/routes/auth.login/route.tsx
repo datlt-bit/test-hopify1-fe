@@ -3,21 +3,30 @@ import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Form, useActionData, useLoaderData } from "react-router";
 
-import { login } from "../../shopify.server";
-import { loginErrorMessage } from "./error.server";
+// Original auth logic (commented out for reference):
+// import { login } from "../../shopify.server";
+// import { loginErrorMessage } from "./error.server";
+//
+// export const loader = async ({ request }: LoaderFunctionArgs) => {
+//   const errors = loginErrorMessage(await login(request));
+//
+//   return { errors };
+// };
+//
+// export const action = async ({ request }: ActionFunctionArgs) => {
+//   const errors = loginErrorMessage(await login(request));
+//
+//   return {
+//     errors,
+//   };
+// };
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const errors = loginErrorMessage(await login(request));
-
-  return { errors };
+export const loader = async (_args: LoaderFunctionArgs) => {
+  return { errors: {} as { shop?: string } };
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const errors = loginErrorMessage(await login(request));
-
-  return {
-    errors,
-  };
+export const action = async (_args: ActionFunctionArgs) => {
+  return { errors: {} as { shop?: string } };
 };
 
 export default function Auth() {
