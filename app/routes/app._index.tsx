@@ -8,6 +8,8 @@ import { useFetcher } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
+import populateProductMutation from "../graphql/populateProduct.graphql?raw";
+import updateVariantMutation from "../graphql/updateVariant.graphql?raw";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
@@ -20,60 +22,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const color = ["Red", "Orange", "Yellow", "Green"][
     Math.floor(Math.random() * 4)
   ];
-  const response = await admin.graphql(
-    `#graphql
-      mutation populateProduct($product: ProductCreateInput!) {
-        productCreate(product: $product) {
-          product {
-            id
-            title
-            handle
-            status
-            variants(first: 10) {
-              edges {
-                node {
-                  id
-                  price
-                  barcode
-                  createdAt
-                }
-              }
-            }
-          }
-        }
-      }`,
-    {
-      variables: {
-        product: {
-          title: `${color} Snowboard`,
-        },
+  const response = await admin.graphql(populateProductMutation, {
+    variables: {
+      product: {
+        title: `${color} Snowboard`,
       },
     },
-  );
+  });
   const responseJson = await response.json();
 
   const product = responseJson.data!.productCreate!.product!;
   const variantId = product.variants.edges[0]!.node!.id!;
 
-  const variantResponse = await admin.graphql(
-    `#graphql
-    mutation shopifyReactRouterTemplateUpdateVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-        productVariants {
-          id
-          price
-          barcode
-          createdAt
-        }
-      }
-    }`,
-    {
-      variables: {
-        productId: product.id,
-        variants: [{ id: variantId, price: "100.00" }],
-      },
+  const variantResponse = await admin.graphql(updateVariantMutation, {
+    variables: {
+      productId: product.id,
+      variants: [{ id: variantId, price: "100.00" }],
     },
-  );
+  });
 
   const variantResponseJson = await variantResponse.json();
 
