@@ -2,15 +2,58 @@ import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 
 import { boundary } from "@shopify/shopify-app-react-router/server";
+import { authenticate } from "../../shopify.server";
 
-// Original authentication logic (commented out to remove login requirement):
-// import { authenticate } from "../../shopify.server";
-import prisma from "../../db.server";
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { admin } = await authenticate.admin(request);
 
-export const loader = async (_args: LoaderFunctionArgs) => {
-  const products = await prisma.product.findMany({
-    include: { variants: true },
-    orderBy: { createdAt: "desc" },
+  const response = await admin.graphql(
+    `
+      query ProductsWithVariants($first: Int!, $variantsFirst: Int!) {
+        products(first: $first) {
+          edges {
+            node {
+              id
+              title
+              handle
+              status
+              variants(first: $variantsFirst) {
+                edges {
+                  node {
+                    id
+                    price
+                    barcode
+                    createdAt
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `,
+    {
+      variables: {
+        first: 50,
+        variantsFirst: 50,
+      },
+    },
+  );
+
+  const data = await response.json();
+  const edges = data?.data?.products?.edges ?? [];
+
+  // Normalize GraphQL shape into the simple structure expected by the UI:
+  // `product.variants` as a flat array of variant nodes.
+  const products = edges.map((edge: any) => {
+    const product = edge.node;
+    const variantEdges = product.variants?.edges ?? [];
+    const variants = variantEdges.map((vEdge: any) => vEdge.node);
+
+    return {
+      ...product,
+      variants,
+    };
   });
 
   return { products };
