@@ -1,0 +1,48 @@
+query Product($id: ID!) {
+  product(id: $id) {
+    id
+    title
+    handle
+    status
+    description
+    descriptionHtml
+    vendor
+    productType
+    createdAt
+    updatedAt
+    featuredMedia {
+      preview {
+        image {
+          url
+          altText
+        }
+      }
+    }
+    media(first: 10) {
+      edges {
+        node {
+          ... on MediaImage {
+            image {
+              url
+              altText
+            }
+          }
+        }
+      }
+    }
+    variants(first: 50) {
+      edges {
+        node {
+          id
+          title
+          price
+          barcode
+          sku
+          inventoryQuantity
+          createdAt
+        }
+      }
+    }
+  }
+}
+

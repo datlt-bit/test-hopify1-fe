@@ -6,139 +6,133 @@ import type {
 } from "react-router";
 import { useFetcher, useLoaderData } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
-// import { authenticate } from "../../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
+import { authenticateWithLogging } from "../../utils/auth.server";
 import populateProductMutation from "../../graphql/populateProduct.graphql?raw";
 import updateVariantMutation from "../../graphql/updateVariant.graphql?raw";
 import prisma from "../../db.server";
 
-// Original authenticated import (kept for reference):
-// import { authenticate } from "../shopify.server";
-
-export const loader = async (_args: LoaderFunctionArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { session, admin } = await authenticateWithLogging(request);
+  
   const products = await prisma.product.findMany({
     include: { variants: true },
     orderBy: { createdAt: "desc" },
   });
 
-  return { products };
+  return { products, shop: session.shop };
 };
 
-// Original authenticated action (commented out to remove login requirement):
-// export const action = async ({ request }: ActionFunctionArgs) => {
-//   const { admin, session } = await authenticate.admin(request);
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { admin, session } = await authenticateWithLogging(request);
+  
   const color = ["Red", "Orange", "Yellow", "Green"][
     Math.floor(Math.random() * 4)
   ];
-//   const response = await admin.graphql(populateProductMutation, {
-//     variables: {
-//       product: {
-//         title: `${color} Snowboard`,
-//       },
-//     },
-//   });
-//   const responseJson = await response.json();
-//
-//   const product = responseJson.data!.productCreate!.product!;
-//   const variantId = product.variants.edges[0]!.node!.id!;
-//
-//   // Persist the created product and its first variant locally
-//   const shopDomain = session.shop;
-//
-//   await prisma.product.upsert({
-//     where: { id: product.id },
-//     update: {
-//       title: product.title,
-//       handle: product.handle,
-//       status: product.status,
-//       shop: shopDomain,
-//     },
-//     create: {
-//       id: product.id,
-//       title: product.title,
-//       handle: product.handle,
-//       status: product.status,
-//       shop: shopDomain,
-//     },
-//   });
-//
-//   const variantNode = product.variants.edges[0]!.node!;
-//
-//   await prisma.variant.upsert({
-//     where: { id: variantNode.id },
-//     update: {
-//       price: variantNode.price,
-//       barcode: variantNode.barcode,
-//       createdAt: variantNode.createdAt
-//         ? new Date(variantNode.createdAt)
-//         : undefined,
-//       shop: shopDomain,
-//       product: {
-//         connect: { id: product.id },
-//       },
-//     },
-//     create: {
-//       id: variantNode.id,
-//       price: variantNode.price,
-//       barcode: variantNode.barcode,
-//       createdAt: variantNode.createdAt
-//         ? new Date(variantNode.createdAt)
-//         : undefined,
-//       shop: shopDomain,
-//       product: {
-//         connect: { id: product.id },
-//       },
-//     },
-//   });
-//
-//   const variantResponse = await admin.graphql(updateVariantMutation, {
-//     variables: {
-//       productId: product.id,
-//       variants: [{ id: variantId, price: "100.00" }],
-//     },
-//   });
-//
-//   const variantResponseJson = await variantResponse.json();
-//
-//   // Persist updated variants returned from the bulk update
-//   const updatedVariants =
-//     variantResponseJson!.data!.productVariantsBulkUpdate!.productVariants;
-//
-//   for (const v of updatedVariants) {
-//     await prisma.variant.upsert({
-//       where: { id: v.id },
-//       update: {
-//         price: v.price,
-//         barcode: v.barcode,
-//         createdAt: v.createdAt ? new Date(v.createdAt) : undefined,
-//         shop: shopDomain,
-//         product: {
-//           connect: { id: product.id },
-//         },
-//       },
-//       create: {
-//         id: v.id,
-//         price: v.price,
-//         barcode: v.barcode,
-//         createdAt: v.createdAt ? new Date(v.createdAt) : undefined,
-//         shop: shopDomain,
-//         product: {
-//           connect: { id: product.id },
-//         },
-//       },
-//     });
-//   }
-//
-//   return {
-//     product: responseJson!.data!.productCreate!.product,
-//     variant: updatedVariants,
-//   };
-// };
+  
+  const response = await admin.graphql(populateProductMutation, {
+    variables: {
+      product: {
+        title: `${color} Snowboard`,
+      },
+    },
+  });
+  const responseJson = await response.json();
 
-export const action = async (_args: ActionFunctionArgs) => {
-  // Stub action with no authentication; return type is widened to `any`
-  // so existing UI code referencing `fetcher.data.product` still type-checks.
-  return {} as any;
+  const product = responseJson.data!.productCreate!.product!;
+  const variantId = product.variants.edges[0]!.node!.id!;
+
+  // Persist the created product and its first variant locally
+  const shopDomain = session.shop;
+
+  await prisma.product.upsert({
+    where: { id: product.id },
+    update: {
+      title: product.title,
+      handle: product.handle,
+      status: product.status,
+      shop: shopDomain,
+    },
+    create: {
+      id: product.id,
+      title: product.title,
+      handle: product.handle,
+      status: product.status,
+      shop: shopDomain,
+    },
+  });
+
+  const variantNode = product.variants.edges[0]!.node!;
+
+  await prisma.variant.upsert({
+    where: { id: variantNode.id },
+    update: {
+      price: variantNode.price,
+      barcode: variantNode.barcode,
+      createdAt: variantNode.createdAt
+        ? new Date(variantNode.createdAt)
+        : undefined,
+      shop: shopDomain,
+      product: {
+        connect: { id: product.id },
+      },
+    },
+    create: {
+      id: variantNode.id,
+      price: variantNode.price,
+      barcode: variantNode.barcode,
+      createdAt: variantNode.createdAt
+        ? new Date(variantNode.createdAt)
+        : undefined,
+      shop: shopDomain,
+      product: {
+        connect: { id: product.id },
+      },
+    },
+  });
+
+  const variantResponse = await admin.graphql(updateVariantMutation, {
+    variables: {
+      productId: product.id,
+      variants: [{ id: variantId, price: "100.00" }],
+    },
+  });
+
+  const variantResponseJson = await variantResponse.json();
+
+  // Persist updated variants returned from the bulk update
+  const updatedVariants =
+    variantResponseJson!.data!.productVariantsBulkUpdate!.productVariants;
+
+  for (const v of updatedVariants) {
+    await prisma.variant.upsert({
+      where: { id: v.id },
+      update: {
+        price: v.price,
+        barcode: v.barcode,
+        createdAt: v.createdAt ? new Date(v.createdAt) : undefined,
+        shop: shopDomain,
+        product: {
+          connect: { id: product.id },
+        },
+      },
+      create: {
+        id: v.id,
+        price: v.price,
+        barcode: v.barcode,
+        createdAt: v.createdAt ? new Date(v.createdAt) : undefined,
+        shop: shopDomain,
+        product: {
+          connect: { id: product.id },
+        },
+      },
+    });
+  }
+
+  return {
+    product: responseJson!.data!.productCreate!.product,
+    variant: updatedVariants,
+  };
 };
 
 export default function Index() {

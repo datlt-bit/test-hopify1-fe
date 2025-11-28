@@ -1,0 +1,31 @@
+query ProductsWithVariants($first: Int!, $variantsFirst: Int!) {
+  products(first: $first) {
+    edges {
+      node {
+        id
+        title
+        handle
+        status
+        featuredMedia {
+          preview {
+            image {
+              url
+              altText
+            }
+          }
+        }
+        variants(first: $variantsFirst) {
+          edges {
+            node {
+              id
+              price
+              barcode
+              createdAt
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

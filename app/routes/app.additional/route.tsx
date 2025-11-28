@@ -1,3 +1,11 @@
+import type { LoaderFunctionArgs } from "react-router";
+import { authenticateWithLogging } from "../../utils/auth.server";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  await authenticateWithLogging(request);
+  return null;
+};
+
 export default function AdditionalPage() {
   return (
     <s-page heading="Additional page">

@@ -1,44 +1,19 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData } from "react-router";
+import { useLoaderData, Link } from "react-router";
 
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import { authenticate } from "../../shopify.server";
+import { authenticateWithLogging } from "../../utils/auth.server";
+import productsQuery from "./products.graphql?raw";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+  const { admin } = await authenticateWithLogging(request);
 
-  const response = await admin.graphql(
-    `
-      query ProductsWithVariants($first: Int!, $variantsFirst: Int!) {
-        products(first: $first) {
-          edges {
-            node {
-              id
-              title
-              handle
-              status
-              variants(first: $variantsFirst) {
-                edges {
-                  node {
-                    id
-                    price
-                    barcode
-                    createdAt
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `,
-    {
-      variables: {
-        first: 50,
-        variantsFirst: 50,
-      },
+  const response = await admin.graphql(productsQuery, {
+    variables: {
+      first: 50,
+      variantsFirst: 50,
     },
-  );
+  });
 
   const data = await response.json();
   const edges = data?.data?.products?.edges ?? [];
@@ -64,7 +39,7 @@ export default function ProductsPage() {
 
   return (
     <s-page heading="Products in local database">
-      <s-section heading="Products and variants">
+      <s-section heading="Products and variants - local and on shopify">
         {products.length === 0 ? (
           <s-paragraph>No products found. Seed the database first.</s-paragraph>
         ) : (
@@ -77,10 +52,26 @@ export default function ProductsPage() {
                 borderRadius="base"
                 background="subdued"
               >
-                <s-heading>{product.title}</s-heading>
-                <s-text>Shop: {product.shop}</s-text>
-                {product.handle && <s-text>Handle: {product.handle}</s-text>}
-                <s-text>Status: {product.status ?? "Unknown"}</s-text>
+                <s-stack direction="inline" gap="base">
+                  {product.featuredMedia?.preview?.image?.url && (
+                    <img
+                      src={product.featuredMedia.preview.image.url}
+                      alt={product.featuredMedia.preview.image.altText || product.title}
+                      style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "4px" }}
+                    />
+                  )}
+                  <s-stack direction="block" gap="none">
+                    <Link
+                      to={`/app/product/${product.id.replace("gid://shopify/Product/", "")}`}
+                      style={{ textDecoration: "none", color: "inherit" }}
+                    >
+                      <s-heading>{product.title}</s-heading>
+                    </Link>
+                    <s-text>Shop: {product.shop}</s-text>
+                    {product.handle && <s-text>Handle: {product.handle}</s-text>}
+                    <s-text>Status: {product.status ?? "Unknown"}</s-text>
+                  </s-stack>
+                </s-stack>
 
                 <s-heading>Variants</s-heading>
                 {product.variants.length === 0 ? (
