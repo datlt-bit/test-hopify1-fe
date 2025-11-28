@@ -3,30 +3,21 @@ import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Form, useActionData, useLoaderData } from "react-router";
 
-// Original auth logic (commented out for reference):
-// import { login } from "../../shopify.server";
-// import { loginErrorMessage } from "./error.server";
-//
-// export const loader = async ({ request }: LoaderFunctionArgs) => {
-//   const errors = loginErrorMessage(await login(request));
-//
-//   return { errors };
-// };
-//
-// export const action = async ({ request }: ActionFunctionArgs) => {
-//   const errors = loginErrorMessage(await login(request));
-//
-//   return {
-//     errors,
-//   };
-// };
+import { login } from "../../shopify.server";
+import { loginErrorMessage } from "./error.server";
 
-export const loader = async (_args: LoaderFunctionArgs) => {
-  return { errors: {} as { shop?: string } };
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const errors = loginErrorMessage(await login(request));
+
+  return { errors };
 };
 
-export const action = async (_args: ActionFunctionArgs) => {
-  return { errors: {} as { shop?: string } };
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const errors = loginErrorMessage(await login(request));
+
+  return {
+    errors,
+  };
 };
 
 export default function Auth() {
@@ -39,20 +30,22 @@ export default function Auth() {
     <AppProvider embedded={false}>
       <s-page>
         <Form method="post">
-        <s-section heading="Log in">
-          <s-text-field
-            name="shop"
-            label="Shop domain"
-            details="example.myshopify.com"
-            value={shop}
-            onChange={(e) => setShop(e.currentTarget.value)}
-            autocomplete="on"
-            error={errors.shop}
-          ></s-text-field>
-          <s-button type="submit">Log in</s-button>
-        </s-section>
+          <s-section heading="Log in">
+            <s-text-field
+              name="shop"
+              label="Shop domain"
+              details="example.myshopify.com"
+              value={shop}
+              onChange={(e) => setShop(e.currentTarget.value)}
+              autocomplete="on"
+              error={errors.shop}
+            ></s-text-field>
+            <s-button type="submit">Log in</s-button>
+          </s-section>
         </Form>
       </s-page>
     </AppProvider>
   );
 }
+
+
