@@ -3,11 +3,12 @@ import {
   ApiVersion,
   AppDistribution,
   shopifyApp,
+  type ShopifyApp,
 } from "@shopify/shopify-app-react-router/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
 
-const shopify = shopifyApp({
+const shopifyConfig = {
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: ApiVersion.October25,
@@ -19,13 +20,22 @@ const shopify = shopifyApp({
   ...(process.env.SHOP_CUSTOM_DOMAIN
     ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
     : {}),
-});
+};
+
+const shopify: ShopifyApp<typeof shopifyConfig> = shopifyApp(shopifyConfig);
 
 export default shopify;
 export const apiVersion = ApiVersion.October25;
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
-export const authenticate = shopify.authenticate;
-export const unauthenticated = shopify.unauthenticated;
-export const login = shopify.login;
-export const registerWebhooks = shopify.registerWebhooks;
-export const sessionStorage = shopify.sessionStorage;
+
+export type Authenticate = typeof shopify.authenticate;
+export type Unauthenticated = typeof shopify.unauthenticated;
+export type Login = typeof shopify.login;
+export type RegisterWebhooks = typeof shopify.registerWebhooks;
+export type SessionStorage = typeof shopify.sessionStorage;
+
+export const authenticate: Authenticate = shopify.authenticate;
+export const unauthenticated: Unauthenticated = shopify.unauthenticated;
+export const login: Login = shopify.login;
+export const registerWebhooks: RegisterWebhooks = shopify.registerWebhooks;
+export const sessionStorage: SessionStorage = shopify.sessionStorage;
