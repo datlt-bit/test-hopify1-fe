@@ -9,7 +9,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
-    shop: session.shop,
+    shop: session.shop
   };
 };
 

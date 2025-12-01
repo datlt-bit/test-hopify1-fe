@@ -1,0 +1,25 @@
+query product {
+  products(first: 100) {
+    nodes {
+      id
+      title
+      category {
+        id
+        fullName
+      }
+      media(first: 10) {
+        nodes {
+          __typename
+          ... on MediaImage {
+            id
+            image {
+              url
+              altText
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

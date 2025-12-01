@@ -3,31 +3,24 @@ import { useLoaderData, Link } from "react-router";
 
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticateWithLogging } from "../../utils/auth.server";
-import productsQuery from "./products.graphql?raw";
+import productsQuery from "../../graphql/productList.graphql?raw";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticateWithLogging(request);
 
-  const response = await admin.graphql(productsQuery, {
-    variables: {
-      first: 50,
-      variantsFirst: 50,
-    },
-  });
+  const response = await admin.graphql(productsQuery);
 
   const data = await response.json();
-  const edges = data?.data?.products?.edges ?? [];
-
-  // Normalize GraphQL shape into the simple structure expected by the UI:
-  // `product.variants` as a flat array of variant nodes.
-  const products = edges.map((edge: any) => {
-    const product = edge.node;
-    const variantEdges = product.variants?.edges ?? [];
-    const variants = variantEdges.map((vEdge: any) => vEdge.node);
+  const nodes = data?.data?.products?.nodes ?? [];
+  const products = nodes.map((product: any) => {
+    const mediaNodes = product.media?.nodes ?? [];
+    const primaryMediaImage =
+      mediaNodes.find((node: any) => node.__typename === "MediaImage") ?? null;
 
     return {
       ...product,
-      variants,
+      variants: product.variants ?? [],
+      primaryImage: primaryMediaImage?.image ?? null,
     };
   });
 
@@ -53,10 +46,10 @@ export default function ProductsPage() {
                 background="subdued"
               >
                 <s-stack direction="inline" gap="base">
-                  {product.featuredMedia?.preview?.image?.url && (
+                  {product.primaryImage?.url && (
                     <img
-                      src={product.featuredMedia.preview.image.url}
-                      alt={product.featuredMedia.preview.image.altText || product.title}
+                      src={product.primaryImage.url}
+                      alt={product.primaryImage.altText || product.title}
                       style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "4px" }}
                     />
                   )}
