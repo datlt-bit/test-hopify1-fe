@@ -15,12 +15,7 @@ import prisma from "../../db.server";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticateWithLogging(request);
   
-  const products = await prisma.product.findMany({
-    include: { variants: true },
-    orderBy: { createdAt: "desc" },
-  });
-
-  return { products, shop: session.shop };
+  return { shop: session.shop };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -45,51 +40,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   // Persist the created product and its first variant locally
   const shopDomain = session.shop;
 
-  await prisma.product.upsert({
-    where: { id: product.id },
-    update: {
-      title: product.title,
-      handle: product.handle,
-      status: product.status,
-      shop: shopDomain,
-    },
-    create: {
-      id: product.id,
-      title: product.title,
-      handle: product.handle,
-      status: product.status,
-      shop: shopDomain,
-    },
-  });
-
   const variantNode = product.variants.edges[0]!.node!;
-
-  await prisma.variant.upsert({
-    where: { id: variantNode.id },
-    update: {
-      price: variantNode.price,
-      barcode: variantNode.barcode,
-      createdAt: variantNode.createdAt
-        ? new Date(variantNode.createdAt)
-        : undefined,
-      shop: shopDomain,
-      product: {
-        connect: { id: product.id },
-      },
-    },
-    create: {
-      id: variantNode.id,
-      price: variantNode.price,
-      barcode: variantNode.barcode,
-      createdAt: variantNode.createdAt
-        ? new Date(variantNode.createdAt)
-        : undefined,
-      shop: shopDomain,
-      product: {
-        connect: { id: product.id },
-      },
-    },
-  });
 
   const variantResponse = await admin.graphql(updateVariantMutation, {
     variables: {
@@ -104,31 +55,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const updatedVariants =
     variantResponseJson!.data!.productVariantsBulkUpdate!.productVariants;
 
-  for (const v of updatedVariants) {
-    await prisma.variant.upsert({
-      where: { id: v.id },
-      update: {
-        price: v.price,
-        barcode: v.barcode,
-        createdAt: v.createdAt ? new Date(v.createdAt) : undefined,
-        shop: shopDomain,
-        product: {
-          connect: { id: product.id },
-        },
-      },
-      create: {
-        id: v.id,
-        price: v.price,
-        barcode: v.barcode,
-        createdAt: v.createdAt ? new Date(v.createdAt) : undefined,
-        shop: shopDomain,
-        product: {
-          connect: { id: product.id },
-        },
-      },
-    });
-  }
-
   return {
     product: responseJson!.data!.productCreate!.product,
     variant: updatedVariants,
@@ -136,7 +62,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Index() {
-  const { products } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
 
   const shopify = useAppBridge();
@@ -239,45 +164,6 @@ export default function Index() {
               </s-box>
             </s-stack>
           </s-section>
-        )}
-      </s-section>
-
-      <s-section heading="Local products in database">
-        {products.length === 0 ? (
-          <s-paragraph>No products found. Seed the database first.</s-paragraph>
-        ) : (
-          <s-stack direction="block" gap="base">
-            {products.map((product: any) => (
-              <s-box
-                key={product.id}
-                padding="base"
-                borderWidth="base"
-                borderRadius="base"
-                background="subdued"
-              >
-                <s-heading>{product.title}</s-heading>
-                <s-text>Shop: {product.shop}</s-text>
-                {product.handle && <s-text>Handle: {product.handle}</s-text>}
-                <s-text>Status: {product.status ?? "Unknown"}</s-text>
-
-                <s-heading>Variants</s-heading>
-                {product.variants.length === 0 ? (
-                  <s-paragraph>No variants for this product.</s-paragraph>
-                ) : (
-                  <s-unordered-list>
-                    {product.variants.map((variant: any) => (
-                      <s-list-item key={variant.id}>
-                        <s-text>
-                          ID: {variant.id} — Price: {variant.price ?? "N/A"} —
-                          Barcode: {variant.barcode ?? "N/A"}
-                        </s-text>
-                      </s-list-item>
-                    ))}
-                  </s-unordered-list>
-                )}
-              </s-box>
-            ))}
-          </s-stack>
         )}
       </s-section>
 
