@@ -7,15 +7,15 @@ import type {
 import { useFetcher, useLoaderData } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import { authenticateWithLogging } from "../../utils/auth.server";
-import populateProductMutation from "../../graphql/populateProduct.graphql?raw";
-import updateVariantMutation from "../../graphql/updateVariant.graphql?raw";
-import prisma from "../../db.server";
+import { authenticateWithLogging } from "@/utils/auth.server";
+import populateProductMutation from "@/graphql/populateProduct.graphql?raw";
+import updateVariantMutation from "@/graphql/updateVariant.graphql?raw";
+import prisma from "@/db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticateWithLogging(request);
   
-  return { shop: session.shop };
+  return { shop: session.shop, };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

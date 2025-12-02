@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router";
-import { authenticateWithLogging } from "../../utils/auth.server";
+import { authenticateWithLogging } from "@/utils/auth.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticateWithLogging(request);

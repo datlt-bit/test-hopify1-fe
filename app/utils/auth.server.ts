@@ -1,4 +1,4 @@
-import { authenticate, sessionStorage } from "../shopify.server";
+import { authenticate, sessionStorage } from "@/shopify.server";
 
 /**
  * Wrapper around authenticate.admin that logs session information
