@@ -22,7 +22,7 @@ export type ProductQuery = { products: { nodes: Array<(
           { __typename: 'MediaImage' }
           & Pick<AdminTypes.MediaImage, 'id'>
           & { image?: AdminTypes.Maybe<Pick<AdminTypes.Image, 'url' | 'altText'>> }
-        )> } }
+        )> }, variants: { nodes: Array<Pick<AdminTypes.ProductVariant, 'id' | 'price' | 'barcode'>> } }
     )> } };
 
 export type ShopifyReactRouterTemplateUpdateVariantMutationVariables = AdminTypes.Exact<{
@@ -34,7 +34,7 @@ export type ShopifyReactRouterTemplateUpdateVariantMutationVariables = AdminType
 export type ShopifyReactRouterTemplateUpdateVariantMutation = { productVariantsBulkUpdate?: AdminTypes.Maybe<{ productVariants?: AdminTypes.Maybe<Array<Pick<AdminTypes.ProductVariant, 'id' | 'price' | 'barcode' | 'createdAt'>>> }> };
 
 interface GeneratedQueryTypes {
-  "query product {\n  products(first: 100) {\n    nodes {\n      id\n      title\n      category {\n        id\n        fullName\n      }\n      media(first: 10) {\n        nodes {\n          __typename\n          ... on MediaImage {\n            id\n            image {\n              url\n              altText\n            }\n          }\n        }\n      }\n    }\n  }\n}": {return: ProductQuery, variables: ProductQueryVariables},
+  "query product {\n  products(first: 100) {\n    nodes {\n      id\n      title\n      category {\n        id\n        fullName\n      }\n      media(first: 10) {\n        nodes {\n          __typename\n          ... on MediaImage {\n            id\n            image {\n              url\n              altText\n            }\n          }\n        }\n      }\n      variants(first: 50) {\n        nodes {\n          id\n          price\n          barcode\n        }\n      }\n    }\n  }\n}": {return: ProductQuery, variables: ProductQueryVariables},
 }
 
 interface GeneratedMutationTypes {

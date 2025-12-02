@@ -19,6 +19,13 @@ query product {
           }
         }
       }
+      variants(first: 50) {
+        nodes {
+          id
+          price
+          barcode
+        }
+      }
     }
   }
 }

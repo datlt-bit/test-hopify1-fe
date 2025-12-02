@@ -16,10 +16,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const mediaNodes = product.media?.nodes ?? [];
     const primaryMediaImage =
       mediaNodes.find((node: any) => node.__typename === "MediaImage") ?? null;
+    const variantNodes = product.variants?.nodes ?? [];
 
     return {
       ...product,
-      variants: product.variants ?? [],
+      variants: variantNodes,
       primaryImage: primaryMediaImage?.image ?? null,
     };
   });
