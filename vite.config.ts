@@ -1,4 +1,5 @@
 import { reactRouter } from "@react-router/dev/vite";
+import { fileURLToPath, URL } from "node:url";
 import { defineConfig, type UserConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
@@ -52,6 +53,11 @@ export default defineConfig({
     reactRouter(),
     tsconfigPaths(),
   ],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./app", import.meta.url)),
+    },
+  },
   build: {
     assetsInlineLimit: 0,
   },

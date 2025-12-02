@@ -2,20 +2,43 @@ import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { useLoaderData, Link } from "react-router";
 
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import { authenticateWithLogging } from "../../utils/auth.server";
-import productsQuery from "../../graphql/productList.graphql?raw";
+import { authenticateWithLogging } from "@/utils/auth.server";
+import productsQuery from "@/graphql/productList.graphql?raw";
+import type { ProductQuery } from "@/types/admin.generated";
+
+type ProductQueryResponse = { data?: ProductQuery };
+type ProductListNode = ProductQuery["products"]["nodes"][number];
+type MediaImageNode = Extract<
+  ProductListNode["media"]["nodes"][number],
+  { __typename: "MediaImage" }
+>;
+type ProductWithPrimaryImage = Omit<ProductListNode, "variants"> & {
+  variants: ProductListNode["variants"]["nodes"];
+  primaryImage: MediaImageNode["image"] | null;
+  handle?: string | null;
+  status?: string | null;
+  shop?: string | null;
+};
+type LoaderData = {
+  products: ProductWithPrimaryImage[];
+};
+
+const isMediaImageNode = (
+  node: ProductListNode["media"]["nodes"][number],
+): node is MediaImageNode => node.__typename === "MediaImage";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticateWithLogging(request);
 
   const response = await admin.graphql(productsQuery);
 
-  const data = await response.json();
-  const nodes = data?.data?.products?.nodes ?? [];
-  const products = nodes.map((product: any) => {
+  const payload: ProductQueryResponse = await response.json();
+  const nodes =
+    payload?.data?.products?.nodes ??
+    ([] as ProductQuery["products"]["nodes"]);
+  const products: LoaderData["products"] = nodes.map((product) => {
     const mediaNodes = product.media?.nodes ?? [];
-    const primaryMediaImage =
-      mediaNodes.find((node: any) => node.__typename === "MediaImage") ?? null;
+    const primaryMediaImage = mediaNodes.find(isMediaImageNode) ?? null;
     const variantNodes = product.variants?.nodes ?? [];
 
     return {
@@ -38,7 +61,7 @@ export default function ProductsPage() {
           <s-paragraph>No products found. Seed the database first.</s-paragraph>
         ) : (
           <s-stack direction="block" gap="base">
-            {products.map((product: any) => (
+            {products.map((product) => (
               <s-box
                 key={product.id}
                 padding="base"
@@ -72,7 +95,7 @@ export default function ProductsPage() {
                   <s-paragraph>No variants for this product.</s-paragraph>
                 ) : (
                     <s-unordered-list>
-                    {product.variants.map((variant: any) => (
+                    {product.variants.map((variant) => (
                       <s-list-item key={variant.id}>
                         <s-text>
                           ID: {variant.id} — Price: {variant.price ?? "N/A"} —
